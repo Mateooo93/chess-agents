@@ -639,7 +639,7 @@ function quiescence(state, alpha, beta, depth) {
   return alpha;
 }
 
-function negamax(state, depth, alpha, beta, nullOk) {
+function negamax(state, depth, alpha, beta, nullOk, isRoot = false) {
   nodes++;
   if (nodes % 1000 === 0) checkTime();
   if (stopSearch) return 0;
@@ -654,7 +654,7 @@ function negamax(state, depth, alpha, beta, nullOk) {
   // Null move pruning
   if (nullOk && depth >= 3 && !isAttacked(state, findKing(state, state.side), state.side ^ 1)) {
     const nullState = { ...state, side: state.side ^ 1 };
-    const nullScore = -negamax(nullState, depth - 1 - NULL_MOVE_REDUCTION, -beta, -beta + 1, false);
+    const nullScore = -negamax(nullState, depth - 1 - NULL_MOVE_REDUCTION, -beta, -beta + 1, false, false);
     if (nullScore >= beta) return beta;
   }
 
@@ -667,15 +667,15 @@ function negamax(state, depth, alpha, beta, nullOk) {
     const move = moves[i];
     const next = applyMove(state, move);
     let score;
-    if (i === 0) score = -negamax(next, depth - 1, -beta, -alpha, true);
+    if (i === 0) score = -negamax(next, depth - 1, -beta, -alpha, true, false);
     else {
-      score = -negamax(next, depth - 1, -alpha - 1, -alpha, true);
-      if (score > alpha) score = -negamax(next, depth - 1, -beta, -alpha, true);
+      score = -negamax(next, depth - 1, -alpha - 1, -alpha, true, false);
+      if (score > alpha) score = -negamax(next, depth - 1, -beta, -alpha, true, false);
     }
     if (score > bestScore) {
       bestScore = score;
       bestMove = move;
-      if (depth >= 4) bestMoveRoot = move;
+      if (isRoot) bestMoveRoot = move;
     }
     if (score > alpha) alpha = score;
     if (alpha >= beta) break;
@@ -699,7 +699,7 @@ function iterativeDeepening(state) {
   }
 
   while (!stopSearch && depth <= 30) {
-    const score = negamax(state, depth, -INF, INF, true);
+    const score = negamax(state, depth, -INF, INF, true, true);
     if (!stopSearch) {
       bestScore = score;
       const elapsed = Date.now() - startTime;
